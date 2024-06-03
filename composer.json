@@ -1,0 +1,24 @@
+{
+    "name": "artnum/kpdf",
+    "description": "PDF extension of tFPDF",
+    "keywords": ["pdf"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Etienne Bagnoud",
+            "email": "etienne@artisan-numerique.ch",
+            "role": "Developer"
+        }
+    ],
+    "minimum-stability": "alpha",
+    "type": "library",
+    "require": {
+        "setasign/tfpdf": "1.33.*",
+        "setasign/fpdi": "^2.3"
+    },
+    "autoload": {
+        "psr-4": {
+            "kPDF\\": "src/"
+        }
+    }
+}
