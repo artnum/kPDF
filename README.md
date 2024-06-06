@@ -1,5 +1,7 @@
 # kPDF
 
+**This is a work in progress**
+
 Extension of tFPDF via FPDI. Features from FPDI/tFPDF and add features like :
 
   - Layers

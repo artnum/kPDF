@@ -33,6 +33,7 @@ class kPDF extends Tfpdf\Fpdi
 {
     use Extension\Color;
     use Extension\Frame;
+    use Extension\NG;
 
     protected $layers = [];
     protected $current_layer = '_origin';
@@ -641,6 +642,15 @@ class kPDF extends Tfpdf\Fpdi
     function getFontSize()
     {
         return $this->FontSize;
+    }
+
+    function getFontFamily()
+    {
+        return $this->FontFamily;
+    }
+
+    function getFontStyle() {
+        return $this->FontStyle;
     }
 
     function getFontWidth()

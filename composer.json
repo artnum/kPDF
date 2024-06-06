@@ -14,7 +14,8 @@
     "type": "library",
     "require": {
         "setasign/tfpdf": "1.33.*",
-        "setasign/fpdi": "^2.3"
+        "setasign/fpdi": "^2.3",
+        "erusev/parsedown": "^1.6"
     },
     "autoload": {
         "psr-4": {
