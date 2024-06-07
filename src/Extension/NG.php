@@ -13,19 +13,56 @@ trait NG {
     protected int $referenceCounter = 0;
     protected array $references = [];
     protected array $beforeBreakPosition = [];
+    protected bool $textStarted = false;
+    protected array $columns = [];
     
-    function addReference ($url) {
-        $this->references[$this->referenceCounter] = $url;
+    function separator() {
+        $this->br();
+        $this->Line($this->left, $this->GetY(), $this->left + 20, $this->GetY());
+        $this->br();
+    }
 
-        $this->_out(sprintf('BT /F%d %.2f Tf %.2f %.2f Td 5.8 Ts (%d) Tj ET', 
-            $this->CurrentFont['i'],
-            $this->FontSizePt * 0.6,
-            ($this->GetX() + 1)* $this->k,
-            ($this->h - $this->GetY() - $this->getFontSize()) * $this->k,
-            $this->referenceCounter + 1)
+    function addReference ($url) {
+        $reference = array_search($url, $this->references);
+
+        if ($reference === false) {
+            $reference = $this->referenceCounter++;
+            $this->references[$reference] = $url;
+        }
+        $x = $this->GetX();
+        $y = $this->GetY();
+        $this->_out(
+            sprintf('BT /F%d %.2f Tf %.2f %.2f Td 5 Ts', 
+                $this->CurrentFont['i'],
+                $this->FontSizePt * 0.8,
+                ($x + ($this->GetStringWidth(' '))) * $this->k,
+                ($this->h - $y - $this->getFontSize()) * $this->k
+            )
         );
 
-        return $this->referenceCounter++;
+        if ($this->unifontSubset)
+        {
+            $txt = strval($reference + 1);
+            $this->_out(' ('.$this->_escape($this->UTF8ToUTF16BE($txt, false)).')');
+            foreach($this->UTF8StringToArray($txt) as $uni) {
+                $this->CurrentFont['subset'][$uni] = $uni;
+            }
+        } else {
+            $this->_out(' ('. $reference + 1 .')');
+        }
+        $this->_out(' Tj 0 Ts ET');
+        return $reference;
+    }
+
+    function printReferences () {
+        for ($i = 0; $i < count($this->references); $i++) {
+            $this->echo($i + 1 . '. ' . $this->references[$i]);
+            $this->br();
+        } 
+    }
+
+    function getReferences () {
+        return $this->references;
     }
 
     function startUnderline() {
@@ -92,8 +129,94 @@ trait NG {
         }
     }
 
-    function setColumn($left, $right) {
+    function addColumn ($name, $left, $width) {
+        $this->columns[$name] = [$left, $left + $width];
+    }
+
+    function setColumn($name) {
+        if (isset($this->columns[$name])) {
+            $this->_setColumn($this->columns[$name][0], $this->columns[$name][1]);
+        }
+    }
+
+    function _setColumn($left, $right) {
         $this->currentColumn = [$left, $right];
     }
 
+    /* Rewrite of the original function just to return info about image */
+    protected function _image($file, $x=null, $y=null, $w=0, $h=0, $type='', $link='')
+    {
+        // Put an image on the page
+        if($file=='') {
+            $this->Error('Image file name is empty');
+        }
+        if(!isset($this->images[$file]))
+        {
+            // First use of this image, get info
+            if($type=='')
+            {
+                $pos = strrpos($file,'.');
+                if(!$pos) {
+                    $this->Error('Image file has no extension and no type was specified: '.$file);
+                }
+                $type = substr($file,$pos+1);
+            }
+            $type = strtolower($type);
+            if($type=='jpeg')
+                $type = 'jpg';
+            $mtd = '_parse'.$type;
+            if(!method_exists($this,$mtd)) {
+                $this->Error('Unsupported image type: '.$type);
+            }
+            $info = $this->$mtd($file);
+            $info['i'] = count($this->images)+1;
+            $this->images[$file] = $info;
+        }
+        else {
+            $info = $this->images[$file];
+        }
+
+        // Automatic width and height calculation if needed
+        if($w==0 && $h==0)
+        {
+            // Put image at 96 dpi
+            $w = -96;
+            $h = -96;
+        }
+        if($w<0) {
+            $w = -$info['w']*72/$w/$this->k;
+        }
+        if($h<0) {
+            $h = -$info['h']*72/$h/$this->k;
+        }
+        if($w==0) {
+            $w = $h*$info['w']/$info['h'];
+        }
+        if($h==0) {
+            $h = $w*$info['h']/$info['w'];
+        }
+
+        // Flowing mode
+        if($y===null)
+        {
+            if($this->y+$h>$this->PageBreakTrigger && !$this->InHeader && !$this->InFooter && $this->AcceptPageBreak())
+            {
+                // Automatic page break
+                $x2 = $this->x;
+                $this->AddPage($this->CurOrientation,$this->CurPageSize,$this->CurRotation);
+                $this->x = $x2;
+            }
+            $y = $this->y;
+            $this->y += $h;
+        }
+    
+        if($x===null) {
+            $x = $this->x;
+        }
+        $this->_out(sprintf('q %.2F 0 0 %.2F %.2F %.2F cm /I%d Do Q',$w*$this->k,$h*$this->k,$x*$this->k,($this->h-($y+$h))*$this->k,$info['i']));
+        if($link) {
+            $this->Link($x,$y,$w,$h,$link);
+        }
+        return $info;
+    }
 }

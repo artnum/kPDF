@@ -94,7 +94,7 @@ class kPDF extends Tfpdf\Fpdi
 
     function Image($file, $x = NULL, $y = NULL, $w = 0, $h = 0, $type = '', $link = '')
     {
-        $ret = parent::Image($file, $x, $y, $w, $h, $type);
+        $ret = $this->_image($file, $x, $y, $w, $h, $type);
         $this->_block();
         return $ret;
     }

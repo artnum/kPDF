@@ -8,21 +8,23 @@ class Parsedown extends BASEParsedown {
 
     protected $previousFontModifier = [];
     protected array $fontDefinition = [
-        'h1' =>     ['size' => 24, 'pt' => true, 'bold' => true, 'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'Helvetica'],
-        'h2' =>     ['size' => 20, 'pt' => true, 'bold' => true, 'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'Helvetica'],
-        'h3' =>     ['size' => 16, 'pt' => true, 'bold' => true, 'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'Helvetica'],
+        'h1' =>     ['size' => 24, 'pt' => true, 'bold' => true,  'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'Helvetica'],
+        'h2' =>     ['size' => 20, 'pt' => true, 'bold' => true,  'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'Helvetica'],
+        'h3' =>     ['size' => 16, 'pt' => true, 'bold' => true,  'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'Helvetica'],
         'h4' =>     ['size' => 16, 'pt' => true, 'bold' => false, 'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'Helvetica'],
         'h5' =>     ['size' => 12, 'pt' => true, 'bold' => false, 'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'Helvetica'],
         'h6' =>     ['size' => 10, 'pt' => true, 'bold' => false, 'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'Helvetica'],
-        'p' =>      ['size' => 10, 'pt' => true, 'bold' => false, 'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'Helvetica'],
+        'p' =>      ['size' => 10, 'pt' => true, 'bold' => false, 'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'dejavu'],
         'li' =>     ['size' => 10, 'pt' => true, 'bold' => false, 'italic' => false, 'tab' => 4,  'subtab' => 4, 'font' => 'Helvetica'],
         'pre' =>    ['size' => 10, 'pt' => true, 'bold' => false, 'italic' => false, 'tab' => 10, 'subtab' => 0, 'font' => 'Courier'],
     ];
 
     protected array $fontModifier = [
-        'link' => ['bold' => false, 'italic' => false, 'underline' => true],
+        'link' => ['bold' => false, 'italic' => false, 'underline' => false],
         'strong' => ['bold' => true, 'italic' => false, 'underline' => false],
-        'em' => ['bold' => false, 'italic' => true, 'underline' => false]
+        'em' => ['bold' => false, 'italic' => true, 'underline' => false],
+        'quote' => ['bold' => false, 'italic' => false, 'underline' => false]
+
     ];
 
     protected function setFontDefinition($fpdf, $name) {
@@ -41,7 +43,6 @@ class Parsedown extends BASEParsedown {
 
     protected function setFontModifier ($fpdf, $name) {
         $this->previousFontModifier = [$fpdf->getFontFamily(), $fpdf->getFontStyle(), $fpdf->getFontSize()];
-        var_dump($this->previousFontModifier);
         $font = $this->fontModifier[$name];
         $fontFamily = $fpdf->getFontFamily();
         $style = '';
@@ -77,6 +78,12 @@ class Parsedown extends BASEParsedown {
     
             $fpdf->start();
             $this->pdflines($fpdf, $lines);
+            $references = $fpdf->getReferences();
+            $fpdf->separator();
+            for ($i = 0; $i < count($references); $i++) {
+                $fpdf->echo($i + 1 . '. ' . $references[$i]);
+                $fpdf->br();
+            }
     }
 
     protected function pdflines($fdpd, array $lines)
@@ -311,12 +318,13 @@ class Parsedown extends BASEParsedown {
         }
 
         $markup .= $this->_pdfUnmarkedText($fpdf, $text);
-        $fpdf->break();
         return $markup;
     }
 
     function _pdfUnmarkedText($fpdf, $text) {
+        if (empty($text)) { return $fpdf->break(); }
         $fpdf->echo($text);
+
     }
 
     function pdfelement($fpdf, $Element)
@@ -341,14 +349,30 @@ class Parsedown extends BASEParsedown {
                 $this->resetFontModifier($fpdf);
                 break;
             case 'a':
-                $this->setFontModifier($fpdf, 'link');
+                $x1 = $fpdf->GetX();
+                $y1 = $fpdf->GetY();
+                $w = $fpdf->GetStringWidth($element['text']);
+                $h = $fpdf->getFontSize();
+                $fpdf->Link($x1, $y1, $w, $h, $element['attributes']['href']);
                 $fpdf->echo($element['text']);
                 $fpdf->addReference($element['attributes']['href']);
                 break;
+            case 'img':
+                $img = $fpdf->Image($element['attributes']['src']);
+                break;
             default:
-                var_dump($element);
                 break;
         }
+    }
+
+    function _pdflines ($fpdf, $lines) {
+        $this->setFontModifier($fpdf, 'quote');
+        foreach($lines['text'] as $line) {
+            $fpdf->indent(20);
+            $this->_pdftext($fpdf, $line);
+            $fpdf->break();
+        }
+        $this->resetFontModifier($fpdf);
     }
 
     function _pdfline($fpdf, $line) {
@@ -362,14 +386,18 @@ class Parsedown extends BASEParsedown {
             case 'h6':
             case 'li':
                 $this->setFontDefinition($fpdf, $line['name']);
+                $this->_pdftext($fpdf, $line['text']);
+                $fpdf->break();
+                break;
+            default:
                 break;
         }
-        $this->_pdftext($fpdf, $line['text']);
     }
 
     function _pdfelement($fpdf, $line) {
         switch ($line['name']) {
-            default: break;
+            default: 
+                break;
             case 'pre':
                 $tab = $this->setFontDefinition($fpdf, $line['name']);
                 $lines = explode("\n", $line['text']['text']);
@@ -378,13 +406,15 @@ class Parsedown extends BASEParsedown {
                     $fpdf->echo($text);
                     $fpdf->break();
                 }
+                $fpdf->break();
                 break;
         }
     }
 
     function _pdfelements ($fpdf, $line) {
         switch($line['name']) {
-            default: break;
+            default: 
+                break;
             case 'ul':
             case 'ol':
                 $tab = $this->setFontDefinition($fpdf, 'li');
@@ -403,6 +433,7 @@ class Parsedown extends BASEParsedown {
                     $fpdf->echo($text['text'][0]);
                     $fpdf->break();
                 }
+                $fpdf->break();
                 break;
         }
     }
