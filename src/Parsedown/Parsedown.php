@@ -14,7 +14,7 @@ class Parsedown extends BASEParsedown {
         'h4' =>     ['size' => 16, 'pt' => true, 'bold' => false, 'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'Helvetica'],
         'h5' =>     ['size' => 12, 'pt' => true, 'bold' => false, 'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'Helvetica'],
         'h6' =>     ['size' => 10, 'pt' => true, 'bold' => false, 'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'Helvetica'],
-        'p' =>      ['size' => 10, 'pt' => true, 'bold' => false, 'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'dejavu'],
+        'p' =>      ['size' => 10, 'pt' => true, 'bold' => false, 'italic' => false, 'tab' => 0,  'subtab' => 0, 'font' => 'Helvetica'],
         'li' =>     ['size' => 10, 'pt' => true, 'bold' => false, 'italic' => false, 'tab' => 4,  'subtab' => 4, 'font' => 'Helvetica'],
         'pre' =>    ['size' => 10, 'pt' => true, 'bold' => false, 'italic' => false, 'tab' => 10, 'subtab' => 0, 'font' => 'Courier'],
     ];
